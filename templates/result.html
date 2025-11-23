@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h2>Result</h2>
+  {% if result %}
+    <p><strong>File:</strong> {{ result.filename }}</p>
+    <p>{{ result.message }}</p>
+  {% else %}
+    <p>No result available.</p>
+  {% endif %}
+  <a href="/">Process another video</a>
+</section>
+{% endblock %}
