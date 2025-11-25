@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python run_ocr_on_frames.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

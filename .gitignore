@@ -1,0 +1,14 @@
+# Ignore environment files (secrets)
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# VS Code settings
+.vscode/
+
+# Logs
+*.log
