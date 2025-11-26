@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frame Extraction Results</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.3em;
+        }
+
+        .controls {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .frames-container {
+            padding: 40px;
+        }
+
+        .frames-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .frames-grid.list-view {
+            grid-template-columns: 1fr;
+        }
+
+        .frame-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .frame-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .frame-image {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .frame-info {
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .frame-id {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .frame-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .frame-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.85em;
+            margin-bottom: 2px;
+        }
+
+        .list-view .frame-card {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            max-height: 200px;
+        }
+
+        .list-view .frame-image {
+            aspect-ratio: 16/9;
+            height: 100%;
+        }
+
+        .list-view .frame-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .frames-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .list-view .frame-card {
+                grid-template-columns: 1fr;
+                max-height: none;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Frame Extraction Results</h1>
+            <div class="stats">
+                <div class="stat">
+                    <span>Total Frames:</span>
+                    <span class="stat-value" id="total-frames">Loading...</span>
+                </div>
+                <div class="stat">
+                    <span>Video Duration:</span>
+                    <span class="stat-value" id="duration">Loading...</span>
+                </div>
+                <div class="stat">
+                    <span>Interval:</span>
+                    <span class="stat-value">2.0s</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="view-controls">
+                <button class="btn active" id="grid-view-btn" onclick="setView('grid')">Grid View</button>
+                <button class="btn" id="list-view-btn" onclick="setView('list')">List View</button>
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="search-input" placeholder="Search by frame ID or time..." onkeyup="searchFrames()">
+                <span id="search-count"></span>
+            </div>
+        </div>
+
+        <div class="frames-container">
+            <div class="frames-grid" id="frames-grid">
+                <!-- Frames will be loaded here -->
+            </div>
+        </div>
+
+        <footer>
+            <p>Frame extraction completed successfully using ClassCast Frame Extraction CLI</p>
+            <p style="margin-top: 5px; font-size: 0.9em;">Video: test.mp4</p>
+        </footer>
+    </div>
+
+    <script>
+        // Load frames from metadata
+        fetch('frames_metadata.json')
+            .then(response => response.json())
+            .then(data => {
+                const frames = data.frames;
+                const totalFrames = data.total_frames;
+                const duration = frames[frames.length - 1].timestamp;
+
+                // Update stats
+                document.getElementById('total-frames').textContent = totalFrames;
+                document.getElementById('duration').textContent = duration.toFixed(1) + 's';
+
+                // Create frame cards
+                const grid = document.getElementById('frames-grid');
+                frames.forEach(frame => {
+                    const card = createFrameCard(frame);
+                    grid.appendChild(card);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading frames:', error);
+                document.getElementById('frames-grid').innerHTML = '<p>Error loading frames metadata</p>';
+            });
+
+        function createFrameCard(frame) {
+            const card = document.createElement('div');
+            card.className = 'frame-card';
+            card.dataset.id = frame.frame_id;
+            card.dataset.time = frame.timestamp;
+
+            const filename = frame.path.split('\\').pop().split('/').pop();
+
+            card.innerHTML = `
+                <img src="${filename}" alt="${frame.frame_id}" class="frame-image" loading="lazy">
+                <div class="frame-info">
+                    <div class="frame-id">${frame.frame_id}</div>
+                    <div class="frame-details">
+                        <div class="frame-detail">
+                            <span class="detail-label">Time</span>
+                            <span>${frame.timestamp.toFixed(1)}s</span>
+                        </div>
+                        <div class="frame-detail">
+                            <span class="detail-label">Frame #</span>
+                            <span>${frame.frame_number}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function setView(view) {
+            const grid = document.getElementById('frames-grid');
+            const gridBtn = document.getElementById('grid-view-btn');
+            const listBtn = document.getElementById('list-view-btn');
+
+            if (view === 'list') {
+                grid.classList.add('list-view');
+                listBtn.classList.add('active');
+                gridBtn.classList.remove('active');
+            } else {
+                grid.classList.remove('list-view');
+                gridBtn.classList.add('active');
+                listBtn.classList.remove('active');
+            }
+        }
+
+        function searchFrames() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.frame-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const frameId = card.dataset.id.toLowerCase();
+                const frameTime = card.dataset.time;
+
+                if (frameId.includes(searchTerm) || frameTime.includes(searchTerm)) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            const searchCount = document.getElementById('search-count');
+            if (searchTerm) {
+                searchCount.textContent = `Showing ${visibleCount} of ${cards.length} frames`;
+            } else {
+                searchCount.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
