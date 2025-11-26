@@ -15,7 +15,7 @@ load_dotenv()
 
 # === API KEYS ===
 # Must be set in .env → ASSEMBLYAI_API_KEY=your_key_here
-ASSEMBLYAI_API_KEY: str | None = os.getenv("ASSEMBLYAI_API_KEY")
+ASSEMBLYAI_API_KEY: Optional[str] = os.getenv("ASSEMBLYAI_API_KEY")
 ASSEMBLYAI_BASE_URL: str = "https://api.assemblyai.com/v2"
 
 if ASSEMBLYAI_API_KEY is None:
