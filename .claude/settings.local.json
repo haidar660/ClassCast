@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python run_ocr_on_frames.py:*)"
+      "Bash(python run_ocr_on_frames.py:*)",
+      "Bash(where:*)",
+      "Bash(findstr:*)",
+      "Bash(python test_fusion_pipeline.py:*)",
+      "Bash(copy:*)",
+      "Bash(start \"\" \"c:\\Users\\User\\Desktop\\haydar\\test_output\\results.html\")",
+      "Bash(python:*)",
+      "Bash(start \"\" \"c:\\Users\\User\\Desktop\\haydar\\test_output\\results_FIXED.html\")",
+      "Bash(echo:*)",
+      "Bash(yt-dlp:*)",
+      "Bash(more:*)",
+      "Bash(start \"\" \"c:\\Users\\User\\Desktop\\haydar\\test_output\\FINAL_RESULTS.html\")",
+      "Bash(start \"\" \"c:\\Users\\User\\Desktop\\haydar\\test_output\\FINAL_COMPLETE.html\")"
     ],
     "deny": [],
     "ask": []
