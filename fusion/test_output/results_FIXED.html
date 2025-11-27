@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassCast Fusion Pipeline - FIXED Results</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .comparison-section {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .column-header {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            border-radius: 10px;
+        }
+
+        .old-header {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .new-header {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .segment {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .segment-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .transcript-text {
+            font-size: 1.05em;
+            line-height: 1.6;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 10px;
+        }
+
+        .original {
+            border-left: 4px solid #ffc107;
+        }
+
+        .fused-old {
+            border-left: 4px solid #dc3545;
+            background: #fff5f5;
+        }
+
+        .fused-new {
+            border-left: 4px solid #28a745;
+            background: #f0fff4;
+        }
+
+        .paraphrase-highlight {
+            background: #ffe5e5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .preserved-highlight {
+            background: #e5ffe5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .issue-label {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #dc3545;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .fixed-label {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #28a745;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .analysis-box {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .analysis-box h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Fusion Prompt FIXED</h1>
+            <p>Comparison: Old (Paraphrasing) vs New (Preserving)</p>
+        </div>
+
+        <div class="comparison-section">
+            <h2 class="section-title">Before & After Comparison</h2>
+
+            <div class="comparison-grid">
+                <div class="column-header old-header">❌ OLD: Paraphrasing Issue</div>
+                <div class="column-header new-header">✅ NEW: Preserving Original</div>
+            </div>
+
+            <!-- Segment 1 -->
+            <div class="comparison-grid">
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #1: 0.5s - 7.6s <span class="issue-label">PARAPHRASED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            This is a really foundational topic in advanced mathematics, and even though it's like a new word, I promise
+                        </div>
+
+                        <div class="transcript-text fused-old">
+                            <strong>Old Fusion (BAD):</strong><br>
+                            This is a really foundational topic in advanced mathematics, and even though it's <span class="paraphrase-highlight">a new term, it relates to functions</span>.
+                        </div>
+
+                        <div class="analysis-box">
+                            <h3>❌ Problem:</h3>
+                            <ul>
+                                <li>Changed "like a new word" → "a new term"</li>
+                                <li>Changed "I promise" → "it relates to functions"</li>
+                                <li>Completely rewrote professor's words</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #1: 0.5s - 7.6s <span class="fixed-label">PRESERVED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            This is a really foundational topic in advanced mathematics, and even though it's like a new word, I promise
+                        </div>
+
+                        <div class="transcript-text fused-new">
+                            <strong>New Fusion (GOOD):</strong><br>
+                            <span class="preserved-highlight">This is a really foundational topic in advanced mathematics, and even though it's like a new word, I promise</span>
+                        </div>
+
+                        <div class="analysis-box" style="background: #e5ffe5; border-left-color: #28a745;">
+                            <h3 style="color: #28a745;">✅ Fixed:</h3>
+                            <ul>
+                                <li>100% word preservation</li>
+                                <li>No paraphrasing</li>
+                                <li>Professor's exact words maintained</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segment 2 -->
+            <div class="comparison-grid">
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #2: 7.6s - 14.6s <span class="issue-label">PARAPHRASED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            you've actually met this idea before. So I reckon it won't take us too long to sort of get up to speed with the ideas. And then you'll get to a
+                        </div>
+
+                        <div class="transcript-text fused-old">
+                            <strong>Old Fusion (BAD):</strong><br>
+                            <span class="paraphrase-highlight">You've actually encountered the concept of functions before, so I believe we won't take too long to get up to speed.</span>
+                        </div>
+
+                        <div class="analysis-box">
+                            <h3>❌ Problem:</h3>
+                            <ul>
+                                <li>Changed "met this idea" → "encountered the concept of functions"</li>
+                                <li>Changed "I reckon" → "I believe"</li>
+                                <li>Changed "we" → added incorrectly</li>
+                                <li>Removed "sort of" and natural speech patterns</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #2: 7.6s - 14.6s <span class="fixed-label">MOSTLY PRESERVED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            you've actually met this idea before. So I reckon it won't take us too long to sort of get up to speed with the ideas. And then you'll get to a
+                        </div>
+
+                        <div class="transcript-text fused-new">
+                            <strong>New Fusion (BETTER):</strong><br>
+                            <span class="preserved-highlight">you've actually met this idea before. So I reckon it won't take us too long to sort of get up to speed with the ideas. And then you'll get to a</span> FUNCTIONS
+                        </div>
+
+                        <div class="analysis-box" style="background: #fff4e6; border-left-color: #ff9800;">
+                            <h3 style="color: #ff9800;">⚡ Improved but not perfect:</h3>
+                            <ul>
+                                <li>100% word preservation ✅</li>
+                                <li>Appends "FUNCTIONS" (incomplete sentence artifact)</li>
+                                <li>Note: Due to time-based segmentation creating incomplete sentences</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segment 3 -->
+            <div class="comparison-grid">
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #3: 14.6s - 19.9s <span class="issue-label">PARAPHRASED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            point where you're like, oh, let's just move forward a bit quicker. But I don't want to do that yet, just in case. I'm like, I.
+                        </div>
+
+                        <div class="transcript-text fused-old">
+                            <strong>Old Fusion (BAD):</strong><br>
+                            <span class="paraphrase-highlight">Eventually, you'll find yourself wanting to move forward more quickly, but for now, let's take our time with the topic of functions.</span>
+                        </div>
+
+                        <div class="analysis-box">
+                            <h3>❌ Problem:</h3>
+                            <ul>
+                                <li>Completely rewritten</li>
+                                <li>Lost conversational tone ("you're like, oh")</li>
+                                <li>Added "with the topic of functions" (not said)</li>
+                                <li>Changed "a bit quicker" → "more quickly"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="segment">
+                        <div class="segment-title">Segment #3: 14.6s - 19.9s <span class="fixed-label">PRESERVED</span></div>
+
+                        <div class="transcript-text original">
+                            <strong>Original:</strong><br>
+                            point where you're like, oh, let's just move forward a bit quicker. But I don't want to do that yet, just in case. I'm like, I.
+                        </div>
+
+                        <div class="transcript-text fused-new">
+                            <strong>New Fusion (GOOD):</strong><br>
+                            <span class="preserved-highlight">point where you're like, oh, let's just move forward a bit quicker. But I don't want to do that yet, just in case. I'm like, I.</span>
+                        </div>
+
+                        <div class="analysis-box" style="background: #e5ffe5; border-left-color: #28a745;">
+                            <h3 style="color: #28a745;">✅ Fixed:</h3>
+                            <ul>
+                                <li>100% word preservation</li>
+                                <li>Conversational tone maintained</li>
+                                <li>No artificial additions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <h3>📊 Summary</h3>
+            <p style="margin: 20px 0; font-size: 1.1em;">
+                <strong>Old Fusion:</strong> Heavy paraphrasing, rewrote professor's words<br>
+                <strong>New Fusion:</strong> 100% word preservation, maintains professor's exact speech
+            </p>
+            <p style="margin-top: 20px;">
+                <span style="color: #28a745; font-weight: bold;">✅ ISSUE FIXED:</span> The fusion engine now preserves the professor's exact wording instead of paraphrasing.
+            </p>
+            <p style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">
+                Note: Segment 2 still has "FUNCTIONS" appended due to incomplete sentence from time-based segmentation (separate issue to fix).
+            </p>
+        </div>
+    </div>
+</body>
+</html>
