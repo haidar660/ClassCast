@@ -540,11 +540,32 @@ def merge_speech_and_board_naturally(speech_text: str, board_text: str) -> str:
     Returns:
         Seamlessly fused sentence
     """
+    # Clean simple fencing/markup from board text (e.g., ```FUNCTIONS```)
+    board_clean = board_text.strip()
+    if board_clean.startswith("```") and board_clean.endswith("```"):
+        board_clean = board_clean.strip("` \n")
+    board_clean = board_clean.strip()
+
+    # If board content already present, avoid duplication
+    if board_clean and board_clean.lower() in speech_text.lower():
+        return speech_text
+
     # Convert board math to spoken form
-    board_speech = math_to_speech(board_text)
+    board_speech = math_to_speech(board_clean)
 
     # Check if it's just a label/title (no math operators)
-    if len(board_text) < 10 and not any(op in board_text for op in ['=', '+', '-', '*', '/', '^']):
+    label_only = len(board_clean) < 20 and not any(op in board_clean for op in ['=', '+', '-', '*', '/', '^'])
+    if label_only:
+        # If the label isn't already mentioned, weave it in softly
+        if board_clean.lower() not in speech_text.lower():
+            sentences = [s.strip() for s in speech_text.split('.') if s.strip()]
+            if sentences:
+                first = sentences[0]
+                rest = sentences[1:]
+                fused_first = f"{first}. We're focusing on {board_clean.lower()}."
+                if rest:
+                    return f"{fused_first} {' '.join(rest)}"
+                return fused_first
         return speech_text
 
     # Strategy 1: Find if formula is partially described in speech
