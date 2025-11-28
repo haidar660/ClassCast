@@ -3,18 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/styles.css">
   <title>ClassCast</title>
 </head>
 <body>
-  <header>
-    <h1>ClassCast</h1>
+  <div class="bg-veil"></div>
+  <header class="topbar centered">
+    <div class="brand logo-inline">
+      <span class="logo-mark">🎧</span>
+      <h1>ClassCast</h1>
+    </div>
   </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-  <footer>
-    <small>&copy; 2024 ClassCast</small>
+  <div class="page-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-description">
+        <h3>ClassCast</h3>
+        <p class="muted">Transform any lecture into an interactive, multi-language podcast with search and Q&A built in.</p>
+      </div>
+      <div class="feature-stack">
+        <div class="feature">
+          <span class="icon">📤</span>
+          <div><strong>Upload Your Lecture</strong><br><span class="muted">YouTube link or local video—processed automatically.</span></div>
+        </div>
+        <div class="feature">
+          <span class="icon">🌍</span>
+          <div><strong>Multi-Language Podcasts</strong><br><span class="muted">Listen back with natural voices in your chosen language.</span></div>
+        </div>
+        <div class="feature">
+          <span class="icon">🔎</span>
+          <div><strong>Semantic Topic Search</strong><br><span class="muted">Jump to any concept instantly—no exact wording needed.</span></div>
+        </div>
+        <div class="feature">
+          <span class="icon">🤖</span>
+          <div><strong>AI Q&A Assistant</strong><br><span class="muted">Ask questions tied to the lecture timeline anytime.</span></div>
+        </div>
+        <div class="feature">
+          <span class="icon">🎙️</span>
+          <div><strong>Full Voice Support</strong><br><span class="muted">Hands-free interaction with voice commands.</span></div>
+        </div>
+        <div class="feature">
+          <span class="icon">📚</span>
+          <div><strong>Learning Resources</strong><br><span class="muted">Auto-suggested references to deepen understanding.</span></div>
+        </div>
+      </div>
+    </aside>
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <footer class="footer">
+    <small>Built for rapid study · ClassCast</small>
   </footer>
 </body>
 </html>
