@@ -10,13 +10,10 @@ import io
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 
-# Fix encoding for Windows console
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# Note: Avoid modifying stdio streams to prevent conflicts with servers/logging.
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -61,8 +58,18 @@ def download_youtube_video(url: str, output_path: Path, duration: int = 20) -> P
         raise
 
 
-def run_pipeline(youtube_url: str, duration: int = 20) -> Dict[str, Any]:
-    """Run the complete fusion pipeline with sentence-level ASR and TTS."""
+def run_pipeline(
+    youtube_url: str,
+    duration: Optional[int] = 20,
+    *,
+    local_video_path: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Run the complete fusion pipeline with sentence-level ASR and TTS.
+
+    When ``local_video_path`` is provided, skips YouTube download and uses the given file.
+    If a local file is provided, the ``duration`` parameter is ignored and the full file is used.
+    """
 
     print(f"\n{'='*80}")
     print(f"CLASSCAST COMPLETE PIPELINE")
@@ -71,14 +78,19 @@ def run_pipeline(youtube_url: str, duration: int = 20) -> Dict[str, Any]:
 
     # Setup directories
     base_dir = Path(__file__).parent
-    test_dir = base_dir / "test_output"
-    test_dir.mkdir(exist_ok=True)
+    test_dir = output_dir if output_dir else (base_dir / "test_output")
+    test_dir.mkdir(parents=True, exist_ok=True)
 
-    video_path = test_dir / "test_video.mp4"
+    video_path = test_dir / "downloaded.mp4"
     frames_dir = test_dir / "frames"
 
-    # Step 1: Download video
-    download_youtube_video(youtube_url, video_path, duration)
+    # Step 1: Download video (or use provided local file)
+    effective_duration = duration if not local_video_path else None
+    if local_video_path:
+        print(f"[INFO] Using existing local video: {local_video_path}")
+        video_path = Path(local_video_path)
+    else:
+        download_youtube_video(youtube_url, video_path, effective_duration or 20)
 
     # Step 2: Extract frames
     print(f"\n{'='*80}")
@@ -91,7 +103,7 @@ def run_pipeline(youtube_url: str, duration: int = 20) -> Dict[str, Any]:
         interval=2.0,
         quality=95,
         start_time=0,
-        end_time=duration
+        end_time=effective_duration
     )
 
     # Step 3: OCR

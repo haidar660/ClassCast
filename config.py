@@ -78,7 +78,8 @@ FUSION_GENERATE_SEMANTIC_NOTES: bool = True
 DEFAULT_LANGUAGE_CODE: str = "en"
 
 # === TTS Settings (pyttsx3) ===
-TTS_ENABLED: bool = True
+# Allow override via env: set TTS_ENABLED=false to skip local TTS (useful if pyttsx3 hangs)
+TTS_ENABLED: bool = os.getenv("TTS_ENABLED", "true").lower() == "true"
 TTS_RATE: int = 180        # words per minute
 TTS_VOLUME: float = 1.0    # 0.0–1.0
 TTS_VOICE_NAME: Optional[str] = None  # keep None to use default system voice

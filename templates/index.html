@@ -1,10 +1,318 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <h2>Upload a video</h2>
-  <form action="/process" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" accept="video/*" required>
-    <button type="submit">Process</button>
-  </form>
+<section class="grid two">
+  <div class="panel">
+    <div class="section-title">
+      <p class="eyebrow">Step 1 · Input</p>
+    </div>
+    <form id="run-form" class="stack" enctype="multipart/form-data">
+      <div class="toggle-group">
+        <button type="button" class="toggle active" data-target="upload">Upload video</button>
+        <button type="button" class="toggle" data-target="youtube">YouTube URL</button>
+      </div>
+      <div class="upload-panel">
+        <label class="field">
+          <span>Upload video</span>
+          <input type="file" name="file" accept="video/*">
+        </label>
+      </div>
+      <div class="youtube-panel" hidden>
+        <label class="field">
+          <span>YouTube URL</span>
+          <input type="url" name="youtube_url" placeholder="https://youtu.be/..." />
+        </label>
+      </div>
+      <label class="field">
+        <span>Podcast language</span>
+        <select class="styled-select" name="languages" id="language-select">
+          <option value="English" selected>English</option>
+          <option value="Spanish">Spanish</option>
+          <option value="French">French</option>
+          <option value="German">German</option>
+          <option value="Arabic">Arabic</option>
+        </select>
+      </label>
+      <div class="youtube-panel-duration" hidden>
+        <label class="field">
+          <span>Duration to process (seconds)</span>
+          <input class="styled-input" type="number" name="duration" value="20" min="5" max="600">
+        </label>
+      </div>
+      <button type="submit" class="primary">Process video</button>
+    </form>
+  </div>
+
+  <div class="panel" id="status-panel">
+    <div class="section-title">
+      <p class="eyebrow">Step 2 · Progress</p>
+    </div>
+    <div id="status-text" class="status-line">Waiting to start…</div>
+    <div class="loader" id="status-loader" hidden></div>
+    <div class="podcast-card" id="podcast-panel" hidden>
+      <div class="podcast-header">
+        <div>
+          <p class="eyebrow">Podcast</p>
+          <h3>Your generated audio</h3>
+          <p class="small" id="podcast-sub">Ready to play in your selected language.</p>
+        </div>
+        <div class="pill soft" id="podcast-status">Complete</div>
+      </div>
+      <div id="podcast-output" class="podcast-list"></div>
+    </div>
+  </div>
 </section>
+
+<section class="panel" id="results-section" hidden>
+  <div class="section-title">
+    <p class="eyebrow">Step 3 · Explore</p>
+  </div>
+  <div class="grid two">
+    <div class="card">
+      <h3>Semantic Search</h3>
+      <div class="field pill-field">
+        <input type="text" id="search-input" placeholder="Find concepts (e.g., chain rule, gradient descent)">
+        <div class="button-row">
+          <button type="button" class="ghost pill-btn" id="mic-search">🎙️ Mic</button>
+          <button type="button" class="ghost pill-btn" id="search-btn">Search</button>
+        </div>
+      </div>
+      <div id="search-results" class="list"></div>
+      <div id="search-recos" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Q&A</h3>
+      <label class="field">
+        <span>Your question</span>
+        <textarea id="question-input" rows="3" placeholder="Ask about the lecture..."></textarea>
+      </label>
+      <div class="button-row">
+        <button type="button" class="ghost pill-btn" id="mic-qa">🎙️ Mic</button>
+        <button type="button" class="ghost pill-btn" id="ask-btn">Ask</button>
+      </div>
+      <div id="chat-answer" class="answer"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+const form = document.getElementById('run-form');
+const statusText = document.getElementById('status-text');
+const statusLoader = document.getElementById('status-loader');
+const resultsSection = document.getElementById('results-section');
+const podcastOut = document.getElementById('podcast-output');
+const podcastPanel = document.getElementById('podcast-panel');
+const uploadPanel = document.querySelector('.upload-panel');
+const youtubePanel = document.querySelector('.youtube-panel');
+const toggles = document.querySelectorAll('.toggle-group .toggle');
+const durationPanel = document.querySelector('.youtube-panel-duration');
+const searchInput = document.getElementById('search-input');
+const questionInput = document.getElementById('question-input');
+let currentRunId = null;
+let pollHandle = null;
+
+// Default state: upload selected, hide YouTube-only controls
+durationPanel.hidden = true;
+youtubePanel.hidden = true;
+uploadPanel.hidden = false;
+toggles.forEach(btn => btn.classList.remove('active'));
+document.querySelector('.toggle[data-target="upload"]').classList.add('active');
+
+function setStatus(text, loading=false) {
+  statusText.textContent = text;
+  statusLoader.hidden = !loading;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = new FormData(form);
+  setStatus('Starting pipeline...', true);
+
+  const resp = await fetch('/api/runs', { method: 'POST', body: data });
+  const json = await resp.json();
+  currentRunId = json.run_id;
+  resultsSection.hidden = true;
+  podcastOut.innerHTML = '';
+  podcastPanel.hidden = true;
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-recos').innerHTML = '';
+  document.getElementById('chat-answer').textContent = '';
+  if (pollHandle) clearInterval(pollHandle);
+  pollHandle = setInterval(checkStatus, 2000);
+});
+
+async function checkStatus() {
+  if (!currentRunId) return;
+  const resp = await fetch(`/api/runs/${currentRunId}`);
+  const json = await resp.json();
+  setStatus(`Status: ${json.status}`, json.status === 'running');
+  if (json.status === 'completed') {
+    clearInterval(pollHandle);
+    statusLoader.hidden = true;
+    resultsSection.hidden = false;
+    renderResults(json.results, json.audio);
+  }
+  if (json.status === 'failed') {
+    clearInterval(pollHandle);
+    setStatus(`Failed: ${json.error || 'unknown error'}`);
+  }
+}
+
+function renderResults(results, audio) {
+  if (audio) {
+    const entries = Object.entries(audio);
+    const firstLang = entries.length ? entries[0][0] : "your language";
+    const sub = document.getElementById('podcast-sub');
+    if (sub) {
+      sub.textContent = `Ready to play in ${firstLang}.`;
+    }
+    podcastOut.innerHTML = entries.map(([lang, path]) => `
+      <div class="list-item">
+        <audio controls src="/files/${path}"></audio>
+      </div>
+    `).join('');
+    podcastPanel.hidden = false;
+    attachSeekHandlers();
+  }
+}
+
+function pausePodcast() {
+  const audios = podcastOut.querySelectorAll('audio');
+  audios.forEach(a => {
+    try { a.pause(); } catch (e) {}
+  });
+}
+
+async function performSearch() {
+  const q = searchInput.value;
+  if (!q || !currentRunId) return;
+  const resp = await fetch(`/api/search?run_id=${currentRunId}&q=${encodeURIComponent(q)}`);
+  const json = await resp.json();
+  const list = document.getElementById('search-results');
+  if (!json.results || json.results.length === 0) {
+    list.innerHTML = `<div class="list-item">No results found.</div>`;
+  } else {
+    list.innerHTML = json.results.map(r => `
+      <div class="list-item">
+        <div class="small">
+          <a href="javascript:void(0)" class="seek-link reco-link" data-time="${r.start.toFixed(1)}">${r.start.toFixed(1)}s</a>
+          · score ${r.score.toFixed(2)}
+        </div>
+        <div>${r.text}</div>
+      </div>
+    `).join('');
+  }
+
+  // Single YouTube search link based on query
+  const reco = document.getElementById('search-recos');
+  const qstr = encodeURIComponent(q);
+  reco.innerHTML = `
+    <div class="list-item">
+      <a class="reco-link" href="https://www.youtube.com/results?search_query=${qstr}" target="_blank" rel="noopener">
+        Search YouTube for "${q}"
+      </a>
+    </div>`;
+
+  attachSeekHandlers();
+}
+
+async function performAsk() {
+  if (!currentRunId) return;
+  const question = questionInput.value;
+  const data = new FormData();
+  data.append('run_id', currentRunId);
+  data.append('question', question);
+  const resp = await fetch('/api/chat', { method: 'POST', body: data });
+  const json = await resp.json();
+  document.getElementById('chat-answer').textContent = json.answer;
+}
+
+document.getElementById('search-btn').addEventListener('click', performSearch);
+
+// Voice input via Web Speech API for both search and Q&A
+const micSearch = document.getElementById('mic-search');
+const micQa = document.getElementById('mic-qa');
+let recognition = null;
+let activeTarget = null; // 'search' or 'qa'
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.onresult = (e) => {
+    const text = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+    if (activeTarget === 'search') {
+      searchInput.value = text;
+    } else if (activeTarget === 'qa') {
+      questionInput.value = text;
+    }
+  };
+  recognition.onstart = () => {
+    pausePodcast();
+  };
+  recognition.onend = () => {
+    if (activeTarget === 'search') {
+      performSearch();
+    } else if (activeTarget === 'qa') {
+      performAsk();
+    }
+    activeTarget = null;
+  };
+}
+function startMic(target) {
+  if (!recognition) return;
+  activeTarget = target;
+  recognition.start();
+}
+micSearch.addEventListener('click', () => startMic('search'));
+micQa.addEventListener('click', () => startMic('qa'));
+
+// Toggle upload vs YouTube
+toggles.forEach(btn => {
+  btn.addEventListener('click', () => {
+    toggles.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.getAttribute('data-target');
+    if (target === 'upload') {
+      uploadPanel.hidden = false;
+      youtubePanel.hidden = true;
+      durationPanel.hidden = true;
+      document.querySelector('input[name="youtube_url"]').value = "";
+    } else {
+      uploadPanel.hidden = true;
+      youtubePanel.hidden = false;
+      durationPanel.hidden = false;
+      document.querySelector('input[name="file"]').value = "";
+    }
+  });
+});
+
+// Q&A
+document.getElementById('ask-btn').addEventListener('click', async () => {
+  if (!currentRunId) return;
+  const question = document.getElementById('question-input').value;
+  const data = new FormData();
+  data.append('run_id', currentRunId);
+  data.append('question', question);
+  const resp = await fetch('/api/chat', { method: 'POST', body: data });
+  const json = await resp.json();
+  document.getElementById('chat-answer').textContent = json.answer;
+});
+
+function attachSeekHandlers() {
+  const audios = podcastOut.querySelectorAll('audio');
+  const timestampLinks = document.querySelectorAll('.seek-link');
+  timestampLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      const t = parseFloat(link.dataset.time || '0');
+      audios.forEach(a => {
+        try {
+          a.currentTime = t;
+          a.play();
+        } catch (e) {}
+      });
+    });
+  });
+}
+</script>
 {% endblock %}
