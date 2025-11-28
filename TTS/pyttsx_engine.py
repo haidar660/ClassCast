@@ -2,6 +2,7 @@
 Lightweight wrapper around pyttsx3 for TTS generation.
 Centralizes engine configuration and audio file creation.
 """
+import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
 
@@ -52,16 +53,7 @@ def generate_tts_audio(
     audio_dir = Path(output_dir) / audio_subdir
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    engine = pyttsx3.init()
-    engine.setProperty("rate", TTS_RATE)
-    engine.setProperty("volume", TTS_VOLUME)
-
-    chosen_voice = _configure_voice(engine, TTS_VOICE_NAME)
-    if chosen_voice:
-        print(f"[INFO] Using TTS voice: {chosen_voice}")
-    elif TTS_VOICE_NAME:
-        print(f"[WARN] Requested TTS voice '{TTS_VOICE_NAME}' not found; using default voice.")
-
+    driver_name = "sapi5" if sys.platform == "win32" else None
     audio_files: List[str] = []
     total = len(sentences)
 
@@ -69,12 +61,22 @@ def generate_tts_audio(
         audio_path = audio_dir / f"{filename_prefix}{idx:03d}{audio_extension}"
         print(f"   Generating audio {idx}/{total}...")
         try:
-            engine.save_to_file(sentence, str(audio_path))
-            engine.runAndWait()
+            eng = pyttsx3.init(driverName=driver_name)
+            eng.setProperty("rate", TTS_RATE)
+            eng.setProperty("volume", TTS_VOLUME)
+            _configure_voice(eng, TTS_VOICE_NAME)
+            eng.save_to_file(sentence, str(audio_path))
+            eng.runAndWait()
+            eng.stop()
             audio_files.append(str(audio_path))
         except Exception as exc:
             print(f"   [WARN] TTS failed for segment {idx}: {exc}")
             audio_files.append("")
+        finally:
+            try:
+                del eng
+            except Exception:
+                pass
 
     print(f"[OK] Generated {len([f for f in audio_files if f])} audio files")
     return audio_files
