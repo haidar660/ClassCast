@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.gitignore
+test_output
+data/input_video
+data/frames
+data/audio
+.idea
+.vscode
