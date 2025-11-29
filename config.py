@@ -1,9 +1,7 @@
 """
 Global configuration for the ClassCast MVP project.
 
-IMPORTANT:
-- Do NOT commit your real API keys to GitHub.
-- API keys are loaded from the `.env` file or OS environment variables.
+
 """
 
 import os

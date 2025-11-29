@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 from openai import OpenAI
 
-from ocr.vision.latex_converter import latex_to_text
+from utils.latex_converter import latex_to_text
 
 client = OpenAI()
 

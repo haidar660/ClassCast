@@ -327,6 +327,19 @@ async def podcast(run_id: str = Form(...), languages: str = Form(...)):
     return {"audio": outputs}
 
 
+@app.get("/api/experiments")
+async def experiments():
+    """Return the experiment summary saved by scripts/run_all_experiments.py."""
+    summary_path = BASE_DIR / "test_output" / "experiment_summary.json"
+    if not summary_path.exists():
+        return {"experiments": []}
+    try:
+        data = json.loads(summary_path.read_text(encoding="utf-8"))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to read experiment summary")
+    return {"experiments": data}
+
+
 @app.get("/files/{path:path}")
 async def serve_file(path: str):
     target = (BASE_DIR / path).resolve()
@@ -341,7 +354,8 @@ def start():
     """Convenience entrypoint for `python app.py`."""
     import uvicorn
 
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    print("\nOpen UI at: http://127.0.0.1:8000\n")
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=False)
 
 
 if __name__ == "__main__":
