@@ -1,0 +1,68 @@
+[Segment 1] 0.9s - 6.1s
+Original: Write 18% as a decimal and as a fraction in simplest form.
+Fused: Write 18% as a decimal and as a fraction in simplest form
+
+[Segment 2] 6.1s - 8.0s
+Original: So let's do it as a decimal first.
+Fused: So let's do it as a decimal first
+
+[Segment 3] 8.6s - 17.0s
+Original: So 18% is the same thing as 18 per hundred or 18%.
+Fused: So 18% is the same thing as 18 per hundred or 18%
+
+[Segment 4] 18.0s - 20.1s
+Original: I'm actually separating out the percent word.
+Fused: I'm actually separating out the percent word. 18% equals 18 per cent
+
+[Segment 5] 20.1s - 25.1s
+Original: It's probably one word, but I'm writing it as literally, percent cent means the same thing as 100.
+Fused: It's probably one word, but I'm writing it as literally, percent cent means the same thing as 100
+
+[Segment 6] 25.1s - 28.5s
+Original: So this literally means 18 per hundred.
+Fused: So this literally means 18 per hundred
+
+[Segment 7] 29.1s - 33.5s
+Original: Actually, I said I would do the decimal first, but we can start putting it into a fraction first.
+Fused: Actually, I said I would do the decimal first, but we can start putting it into a fraction first. This literally means 18 per hundred
+
+[Segment 8] 33.7s - 39.2s
+Original: 18 per hundred as a fraction literally means 18 per hundred.
+Fused: 18 per hundred as a fraction literally means 18 per hundred
+
+[Segment 9] 40.5s - 41.8s
+Original: So we're doing the fraction first.
+Fused: So we're doing the fraction first
+
+[Segment 10] 41.8s - 46.4s
+Original: This literally means 18 per hundred or 18 hundredths.
+Fused: This literally means 18 per hundred or 18 hundredths
+
+[Segment 11] 46.8s - 52.5s
+Original: Now, if we want to do it from here, we could go straight to a decimal, or we could do this fraction in simplest form.
+Fused: Now, if we want to do it from here, we could go straight to a decimal, or we could do this fraction in simplest form
+
+[Segment 12] 52.6s - 55.6s
+Original: Let's do the decimal first, just because that's actually where I said I would do first.
+Fused: Let's do the decimal first, just because that's actually where I said I would do first
+
+[Segment 13] 55.6s - 56.4s
+Original: So let's do that first.
+Fused: So let's do that first
+
+[Segment 14] 56.4s - 57.2s
+Original: So how do we write.
+Fused: So how do we write
+
+[Segment 15] 57.2s - 58.6s
+Original: So this is the same thing?
+Fused: So this is the same thing. 18 minus minus minus 100 equals
+
+[Segment 16] 59.2s - 60.4s
+Original: This is the same thing as.
+Fused: This is the same thing as
+
+[Segment 17] 65.1s - 68.8s
+Original: Eighteen hundredths, and we know how to write that in decimal form.
+Fused: Eighteen hundredths, and we know how to write that in decimal form
+

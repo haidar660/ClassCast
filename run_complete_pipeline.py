@@ -11,6 +11,8 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+import re
+import shutil
 from dotenv import load_dotenv
 
 # Note: Avoid modifying stdio streams to prevent conflicts with servers/logging.
@@ -100,11 +102,25 @@ def run_pipeline(
     frames_metadata = extract_frames(
         video_path=video_path,
         output_dir=frames_dir,
-        interval=2.0,
+        interval=3.0,
         quality=95,
         start_time=0,
         end_time=effective_duration
     )
+
+    # Save kept frames list and copies for inspection (frames already deduped in extract_frames)
+    kept_dir = test_dir / "frames_kept"
+    kept_dir.mkdir(exist_ok=True)
+    for f in frames_metadata:
+        src = Path(f["path"])
+        dst = kept_dir / src.name
+        try:
+            shutil.copy(src, dst)
+        except Exception:
+            pass
+    kept_list_path = test_dir / "frames_kept.json"
+    with open(kept_list_path, "w", encoding="utf-8") as fp:
+        json.dump(frames_metadata, fp, indent=2)
 
     # Step 3: OCR
     print(f"\n{'='*80}")
@@ -171,11 +187,23 @@ def run_pipeline(
         board_elements=board_elements
     )
 
+    def _dedup_clauses(text: str) -> str:
+        if not isinstance(text, str):
+            text = "" if text is None else str(text)
+        parts = [p.strip() for p in re.split(r'[.;!?]+', text) if p.strip()]
+        cleaned = []
+        for p in parts:
+            if not cleaned or cleaned[-1].lower() != p.lower():
+                cleaned.append(p)
+        return ". ".join(cleaned)
+
     # Gently weave board labels into fused text when useful
     for i, fused in enumerate(fused_sentences):
         board_text = board_elements[i][0] if board_elements[i] else ""
+        safe_fused = fused if isinstance(fused, str) else ""
         if board_text:
-            fused_sentences[i] = merge_speech_and_board_naturally(fused, board_text)
+            safe_fused = merge_speech_and_board_naturally(safe_fused, board_text)
+        fused_sentences[i] = _dedup_clauses(safe_fused)
 
     fusion_path = test_dir / "fusion_results.txt"
     with open(fusion_path, 'w', encoding='utf-8') as f:
@@ -183,6 +211,24 @@ def run_pipeline(
             f.write(f"[Segment {idx}] {seg.start:.1f}s - {seg.end:.1f}s\n")
             f.write(f"Original: {seg.text}\n")
             f.write(f"Fused: {fused}\n\n")
+
+    # Save fused results as JSON for easy inspection
+    fusion_json_path = test_dir / "fusion_results.json"
+    with open(fusion_json_path, 'w', encoding='utf-8') as f:
+        json.dump(
+            [
+                {
+                    "id": i + 1,
+                    "start": seg.start,
+                    "end": seg.end,
+                    "original": seg.text,
+                    "fused": fused,
+                }
+                for i, (seg, fused) in enumerate(zip(segments, fused_sentences))
+            ],
+            f,
+            indent=2,
+        )
 
     print(f"[SAVED] Fusion results saved to: {fusion_path}")
 
