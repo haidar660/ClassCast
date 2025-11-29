@@ -1,87 +1,53 @@
-"""
-Centralized path utilities for ClassCast project.
-Ensures all data directories exist and provides helper functions.
-"""
+# utils/paths.py
 from pathlib import Path
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
 
-# Project root
-PROJECT_ROOT = Path(__file__).parent.parent
-
-# Data directories
-DATA_DIR = PROJECT_ROOT / "data"
-INPUT_VIDEO_DIR = DATA_DIR / "input_video"
-AUDIO_DIR = DATA_DIR / "audio"
-FRAMES_DIR = DATA_DIR / "frames"
-OCR_DIR = DATA_DIR / "ocr"
-TRANSCRIPTS_DIR = DATA_DIR / "transcripts"
-FUSED_DIR = DATA_DIR / "fused"
-TTS_DIR = DATA_DIR / "tts"
-
-# Template and static directories
-TEMPLATES_DIR = PROJECT_ROOT / "templates"
-STATIC_DIR = PROJECT_ROOT / "static"
+TEST_OUTPUT_BASE = Path("test_output")
+INPUT_VIDEO_DIR = Path("data") / "input_video"
 
 
-def ensure_data_directories():
-    """Create all data directories if they don't exist."""
-    directories = [
-        INPUT_VIDEO_DIR,
-        AUDIO_DIR,
-        FRAMES_DIR,
-        OCR_DIR,
-        TRANSCRIPTS_DIR,
-        FUSED_DIR,
-        TTS_DIR,
-    ]
-    for directory in directories:
-        directory.mkdir(parents=True, exist_ok=True)
+@dataclass
+class RunPaths:
+    run_id: str
+    run_dir: Path
+    input_video_path: Path
+    frames_dir: Path
+    audio_dir: Path
+    ocr_path: Path
+    transcript_path: Path
+    fused_path: Path
+    aligned_frames_path: Path
 
 
-def get_file_prefix(video_filename: str) -> str:
-    """
-    Extract a clean prefix from the video filename.
-    Example: 'lecture_01.mp4' -> 'lecture_01'
-    """
-    return Path(video_filename).stem
+def create_run_paths(base_dir: Optional[Path] = None) -> RunPaths:
+    base = base_dir or TEST_OUTPUT_BASE
 
+    run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = base / "runs" / run_id
+    input_video_path = INPUT_VIDEO_DIR / f"{run_id}.mp4"
 
-def get_audio_path(prefix: str) -> Path:
-    """Get path for extracted audio file."""
-    return AUDIO_DIR / f"{prefix}.wav"
+    frames_dir = run_dir / "frames"
+    audio_dir = run_dir / "audio_segments"
 
+    ocr_path = run_dir / "ocr_results.json"
+    transcript_path = run_dir / "transcript.json"
+    fused_path = run_dir / "fused_results.json"
+    aligned_frames_path = run_dir / "aligned_frames.json"
 
-def get_frame_path(prefix: str, frame_id: str) -> Path:
-    """Get path for a specific frame image."""
-    frame_dir = FRAMES_DIR / prefix
-    frame_dir.mkdir(parents=True, exist_ok=True)
-    return frame_dir / f"{frame_id}.jpg"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    INPUT_VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 
-
-def get_ocr_json_path(prefix: str) -> Path:
-    """Get path for OCR results JSON."""
-    return OCR_DIR / f"{prefix}_ocr.json"
-
-
-def get_transcript_json_path(prefix: str) -> Path:
-    """Get path for ASR transcript JSON."""
-    return TRANSCRIPTS_DIR / f"{prefix}_transcript.json"
-
-
-def get_fused_json_path(prefix: str) -> Path:
-    """Get path for fused data JSON."""
-    return FUSED_DIR / f"{prefix}_fused.json"
-
-
-def get_markdown_path(prefix: str) -> Path:
-    """Get path for markdown export."""
-    return FUSED_DIR / f"{prefix}.md"
-
-
-def get_pdf_path(prefix: str) -> Path:
-    """Get path for PDF export."""
-    return FUSED_DIR / f"{prefix}.pdf"
-
-
-def get_tts_audio_path(prefix: str) -> Path:
-    """Get path for TTS audio file."""
-    return TTS_DIR / f"{prefix}_podcast.mp3"
+    return RunPaths(
+        run_id=run_id,
+        run_dir=run_dir,
+        input_video_path=input_video_path,
+        frames_dir=frames_dir,
+        audio_dir=audio_dir,
+        ocr_path=ocr_path,
+        transcript_path=transcript_path,
+        fused_path=fused_path,
+        aligned_frames_path=aligned_frames_path,
+    )

@@ -1,8 +1,0 @@
-[Segment 1] 0.6s - 16.0s
-Original: Let's see if we can write 1.
-Fused: Let's see if we can write 1. 1.501
-
-[Segment 2] 16.3s - 20.0s
-Original: We haven't changed its value, and let's multiply it times 100.
-Fused: We haven't changed its value, and let's multiply it times 100. 1.501 over 1 times
-

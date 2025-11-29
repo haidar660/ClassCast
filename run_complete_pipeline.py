@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
+from utils.paths import create_run_paths
 
 # Note: Avoid modifying stdio streams to prevent conflicts with servers/logging.
 
@@ -31,20 +32,30 @@ from TTS import generate_tts_audio
 load_dotenv()
 
 
-def download_youtube_video(url: str, output_path: Path, duration: int = 20) -> Path:
-    """Download the first N seconds of a YouTube video."""
+def download_youtube_video(
+    url: str,
+    output_path: Path,
+    *,
+    start: float = 0.0,
+    end: Optional[float] = None,
+) -> Path:
+    """Download a time slice of a YouTube video (defaults to the first N seconds)."""
     print(f"\n{'='*80}")
     print(f"STEP 1: DOWNLOAD VIDEO")
     print(f"{'='*80}")
     print(f"URL: {url}")
-    print(f"Duration: {duration} seconds")
+    print(f"Start: {start} seconds")
+    if end is not None:
+        print(f"End: {end} seconds")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    section = f"*{start}-{'' if end is None else end}"
 
     cmd = [
         "yt-dlp",
         "-f", "best[ext=mp4]",
-        "--download-sections", f"*0-{duration}",
+        "--download-sections", section,
         "-o", str(output_path),
         url
     ]
@@ -57,13 +68,13 @@ def download_youtube_video(url: str, output_path: Path, duration: int = 20) -> P
         print(f"[ERROR] Download failed: {e.stderr}")
         raise
 
-
 def run_pipeline(
     youtube_url: str,
     duration: Optional[int] = 20,
     *,
     local_video_path: Optional[Path] = None,
     output_dir: Optional[Path] = None,
+    start_time: float = 0.0,
 ) -> Dict[str, Any]:
     """Run the complete fusion pipeline with sentence-level ASR and TTS.
 
@@ -76,69 +87,85 @@ def run_pipeline(
     print(f"NEW: Sentence-level ASR + TTS")
     print(f"{'='*80}")
 
-    # Setup directories
-    base_dir = Path(__file__).parent
-    test_dir = output_dir if output_dir else (base_dir / "test_output")
-    test_dir.mkdir(parents=True, exist_ok=True)
+    # === Setup run-specific paths under test_output/runs/<run_id> ===
+    # If output_dir is provided, it overrides the default test_output base.
+    base_output = Path(output_dir) if output_dir is not None else None
+    paths = create_run_paths(base_dir=base_output)
 
-    video_path = test_dir / "downloaded.mp4"
-    frames_dir = test_dir / "frames"
+    run_dir = paths.run_dir
+    frames_dir = paths.frames_dir
+    audio_dir = paths.audio_dir
+
+    # Decide where the video file will live (inside this run directory)
+    video_path = paths.input_video_path
+
+    clip_is_trimmed = local_video_path is None
+    end_time = None if duration is None else start_time + duration
 
     # Step 1: Download video (or use provided local file)
-    effective_duration = duration if not local_video_path else None
     if local_video_path:
         print(f"[INFO] Using existing local video: {local_video_path}")
         video_path = Path(local_video_path)
     else:
-        download_youtube_video(youtube_url, video_path, effective_duration or 20)
+        download_youtube_video(
+            youtube_url,
+            video_path,
+            start=start_time,
+            end=end_time,
+        )
 
     # Step 2: Extract frames
     print(f"\n{'='*80}")
     print(f"STEP 2: EXTRACT FRAMES")
     print(f"{'='*80}")
-    frames_dir.mkdir(exist_ok=True)
+
+    frame_start = 0.0 if clip_is_trimmed else start_time
+    frame_end = None
+    if clip_is_trimmed:
+        frame_end = duration
+    else:
+        frame_end = end_time
+
     frames_metadata = extract_frames(
         video_path=video_path,
         output_dir=frames_dir,
         interval=2.0,
         quality=95,
-        start_time=0,
-        end_time=effective_duration
+        start_time=frame_start,
+        end_time=frame_end,
     )
 
     # Step 3: OCR
     print(f"\n{'='*80}")
     print(f"STEP 3: OCR ON FRAMES")
     print(f"{'='*80}")
+
     ocr_results = perform_ocr_on_frames(frames_metadata, model="gpt-4o-mini")
 
-    ocr_output_path = test_dir / "ocr_results.json"
-    with open(ocr_output_path, 'w', encoding='utf-8') as f:
+    with open(paths.ocr_path, "w", encoding="utf-8") as f:
         json.dump(ocr_results, f, indent=2)
-    print(f"[SAVED] OCR results saved to: {ocr_output_path}")
+    print(f"[SAVED] OCR results saved to: {paths.ocr_path}")
 
-    # Step 4: ASR with sentence-level segmentation (centralized in audio_pipeline)
+    # Step 4: ASR with sentence-level segmentation
     print(f"\n{'='*80}")
     print(f"STEP 4: AUDIO TRANSCRIPTION (SENTENCE-LEVEL)")
     print(f"{'='*80}")
-    segments = transcribe_video_to_sentence_segments(video_path)
 
-    # Drop obviously incomplete sentence fragments (very short)
+    segments = transcribe_video_to_sentence_segments(video_path)
     segments = filter_incomplete_segments(segments, min_words=4)
 
-    transcript_path = test_dir / "transcript.json"
-    with open(transcript_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            "segments": [
-                {
-                    "start": seg.start,
-                    "end": seg.end,
-                    "text": seg.text
-                }
-                for seg in segments
-            ]
-        }, f, indent=2)
-    print(f"[SAVED] Transcript saved to: {transcript_path}")
+    with open(paths.transcript_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "segments": [
+                    {"start": seg.start, "end": seg.end, "text": seg.text}
+                    for seg in segments
+                ]
+            },
+            f,
+            indent=2,
+        )
+    print(f"[SAVED] Transcript saved to: {paths.transcript_path}")
 
     # Step 5: Pairing
     print(f"\n{'='*80}")
@@ -146,20 +173,19 @@ def run_pipeline(
     print(f"{'='*80}")
 
     frame_infos = [
-        FrameInfo(time=frame['timestamp'], path=frame['path'])
+        FrameInfo(time=frame["timestamp"], path=frame["path"])
         for frame in frames_metadata
     ]
 
     from fusion.models.data_models import find_closest_frame
+
     segment_to_frame = find_closest_frame(segments, frame_infos)
     aligned_frames = [segment_to_frame[i] for i in range(len(segments))]
 
-    # Extract board elements
     board_elements = build_board_elements(segments, ocr_results)
-
     print(f"[OK] Paired {len(segments)} segments with {len(aligned_frames)} frames")
 
-    # Step 6: Fusion (with fixed prompt)
+    # Step 6: Fusion (no paraphrasing)
     print(f"\n{'='*80}")
     print(f"STEP 6: FUSION (NO PARAPHRASING)")
     print(f"{'='*80}")
@@ -168,7 +194,7 @@ def run_pipeline(
     fused_sentences = controller.fuse_pipeline(
         segments=segments,
         frames=aligned_frames,
-        board_elements=board_elements
+        board_elements=board_elements,
     )
 
     # Gently weave board labels into fused text when useful
@@ -177,26 +203,48 @@ def run_pipeline(
         if board_text:
             fused_sentences[i] = merge_speech_and_board_naturally(fused, board_text)
 
-    fusion_path = test_dir / "fusion_results.txt"
-    with open(fusion_path, 'w', encoding='utf-8') as f:
+    fusion_txt_path = run_dir / "fusion_results.txt"
+    with open(fusion_txt_path, "w", encoding="utf-8") as f:
         for idx, (seg, fused) in enumerate(zip(segments, fused_sentences), 1):
             f.write(f"[Segment {idx}] {seg.start:.1f}s - {seg.end:.1f}s\n")
             f.write(f"Original: {seg.text}\n")
             f.write(f"Fused: {fused}\n\n")
 
-    print(f"[SAVED] Fusion results saved to: {fusion_path}")
+    print(f"[SAVED] Fusion results saved to: {fusion_txt_path}")
 
-    # Step 7: TTS (NEW)
+    # Also save fused segments as JSON using paths.fused_path
+    with open(paths.fused_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "segments": [
+                    {
+                        "id": i + 1,
+                        "start": seg.start,
+                        "end": seg.end,
+                        "original_text": seg.text,
+                        "fused_text": fused_sentences[i],
+                    }
+                    for i, seg in enumerate(segments)
+                ]
+            },
+            f,
+            indent=2,
+        )
+
+    # Step 7: TTS
     print(f"\n{'='*80}")
     print(f"STEP 7: TEXT-TO-SPEECH GENERATION")
     print(f"{'='*80}")
-    audio_files = generate_tts_audio(fused_sentences, test_dir)
 
-    # Prepare results
+    audio_files = generate_tts_audio(fused_sentences, audio_dir)
+
+    # Prepare final results object
     results = {
+        "run_id": paths.run_id,
         "video_url": youtube_url,
         "duration": duration,
         "video_path": str(video_path),
+        "output_dir": str(run_dir),
         "frames_dir": str(frames_dir),
         "total_frames": len(frames_metadata),
         "total_segments": len(segments),
@@ -210,20 +258,20 @@ def run_pipeline(
                 "frame_path": aligned_frames[i].path,
                 "frame_time": aligned_frames[i].time,
                 "board_text": board_elements[i][0] if board_elements[i] else "",
-                "audio_path": audio_files[i] if i < len(audio_files) else ""
+                "audio_path": str(audio_files[i]) if i < len(audio_files) else "",
             }
             for i, (seg, fused) in enumerate(zip(segments, fused_sentences))
-        ]
+        ],
     }
 
-    results_path = test_dir / "complete_results.json"
-    with open(results_path, 'w', encoding='utf-8') as f:
+    results_path = run_dir / "complete_results.json"
+    with open(results_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
     print(f"\n{'='*80}")
     print(f"PIPELINE COMPLETE!")
     print(f"{'='*80}")
-    print(f"[OK] Results saved to: {test_dir}")
+    print(f"[OK] Results saved under run directory: {run_dir}")
 
     return results
 
@@ -248,19 +296,16 @@ def main():
 
     print("[OK] API keys found")
 
-    # YouTube URL
     youtube_url = "https://youtu.be/i4g1krYYIFE?si=DA1ZLa8SbDYr88Vx"
     duration = 20
 
     try:
-        # Check if assemblyai is installed
         try:
             import assemblyai
         except ImportError:
             print("Installing assemblyai...")
             subprocess.run([sys.executable, "-m", "pip", "install", "assemblyai"], check=True)
 
-        # Run pipeline
         results = run_pipeline(youtube_url, duration)
 
         print(f"\n{'='*80}")
