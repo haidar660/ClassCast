@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 import cv2
+import numpy as np
 
 
 def setup_output_directory(output_dir: Path) -> None:
@@ -139,7 +140,53 @@ def extract_frames(
 
     print(f"[OK] Extraction complete! {len(frames_metadata)} frames extracted")
 
-    return frames_metadata
+    # Deduplicate near-identical frames using hist/diff and keep-every-N-seconds safeguard
+    def _frame_similarity(path_a: Path, path_b: Path) -> float:
+        img_a = cv2.imread(str(path_a), cv2.IMREAD_GRAYSCALE)
+        img_b = cv2.imread(str(path_b), cv2.IMREAD_GRAYSCALE)
+        if img_a is None or img_b is None:
+            return 0.0
+        hist_a = cv2.calcHist([img_a], [0], None, [32], [0, 256])
+        hist_b = cv2.calcHist([img_b], [0], None, [32], [0, 256])
+        cv2.normalize(hist_a, hist_a)
+        cv2.normalize(hist_b, hist_b)
+        return float(cv2.compareHist(hist_a, hist_b, cv2.HISTCMP_CORREL))
+
+    def _frame_diff(path_a: Path, path_b: Path) -> float:
+        img_a = cv2.imread(str(path_a), cv2.IMREAD_GRAYSCALE)
+        img_b = cv2.imread(str(path_b), cv2.IMREAD_GRAYSCALE)
+        if img_a is None or img_b is None:
+            return 1.0
+        img_a = cv2.resize(img_a, (64, 64))
+        img_b = cv2.resize(img_b, (64, 64))
+        return float(np.mean(np.abs(img_a.astype(np.float32) - img_b.astype(np.float32))) / 255.0)
+
+    hist_threshold = 0.85
+    diff_threshold = 0.05
+    keep_every_seconds = 5.0
+
+    filtered_frames: List[Dict[str, any]] = []
+    last_kept: Optional[Dict[str, any]] = None
+    last_kept_ts: Optional[float] = None
+    for frame in frames_metadata:
+        if last_kept is None:
+            filtered_frames.append(frame)
+            last_kept = frame
+            last_kept_ts = frame.get("timestamp", 0.0)
+            continue
+        sim = _frame_similarity(Path(last_kept["path"]), Path(frame["path"]))
+        diff = _frame_diff(Path(last_kept["path"]), Path(frame["path"]))
+        cur_ts = frame.get("timestamp", 0.0)
+        time_gap = (cur_ts - last_kept_ts) if last_kept_ts is not None else keep_every_seconds
+        if not (sim >= hist_threshold or diff <= diff_threshold) or time_gap >= keep_every_seconds:
+            filtered_frames.append(frame)
+            last_kept = frame
+            last_kept_ts = cur_ts
+
+    if len(filtered_frames) != len(frames_metadata):
+        print(f"[INFO] Frame dedup: kept {len(filtered_frames)} / {len(frames_metadata)} frames")
+
+    return filtered_frames
 
 
 def save_metadata(frames_metadata: List[Dict], output_path: Path) -> None:
